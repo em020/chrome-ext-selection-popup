@@ -3,14 +3,10 @@ import React, { useState, useEffect, useCallback } from 'react'
 interface PopupPosition {
   /** Horizontal centre of the button, in CSS fixed-position pixels */
   x: number
-  /** Top edge anchor for the button, in CSS fixed-position pixels */
+  /** Top edge of the button, in CSS fixed-position pixels */
   y: number
-  /** Whether the button sits above the selection (true) or below (false) */
-  above: boolean
 }
 
-/** Height of the button in pixels (must match CSS) */
-const POPUP_SIZE = 36
 /** Gap between the selection rect edge and the button edge */
 const POPUP_OFFSET = 8
 
@@ -33,17 +29,15 @@ function getSelectionRect(): DOMRect | null {
 function calculatePosition(rect: DOMRect): PopupPosition {
   const vw = window.innerWidth
 
-  // Horizontally centre the button over the selection, clamped to viewport
-  const halfBtn = POPUP_SIZE / 2 + 4
+  // Horizontally centre the button over the selection, clamped to viewport edges
+  const halfBtn = POPUP_OFFSET + 14  // half of 36px button + small margin
   const x = Math.max(halfBtn, Math.min(rect.left + rect.width / 2, vw - halfBtn))
 
-  // Place above if there is enough room; otherwise place below
-  const above = rect.top > POPUP_SIZE + POPUP_OFFSET * 2
-  const y = above
-    ? rect.top - POPUP_OFFSET          // button's bottom edge will land at rect.top - POPUP_OFFSET
-    : rect.bottom + POPUP_OFFSET       // button's top edge will land at rect.bottom + POPUP_OFFSET
+  // Always place below the selection so the icon doesn't compete with
+  // the system context menu (which typically appears above on mobile)
+  const y = rect.bottom + POPUP_OFFSET
 
-  return { x, y, above }
+  return { x, y }
 }
 
 export default function SelectionPopup() {
@@ -111,8 +105,8 @@ export default function SelectionPopup() {
     position: 'fixed',
     left: `${position.x}px`,
     top: `${position.y}px`,
-    // Translate so the button centre aligns with x and the correct edge aligns with y
-    transform: position.above ? 'translate(-50%, -100%)' : 'translate(-50%, 0%)',
+    // Centre horizontally; top edge of button aligns with y (rect.bottom + offset)
+    transform: 'translate(-50%, 0%)',
     zIndex: 2147483647,
     pointerEvents: 'all',
   }
