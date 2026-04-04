@@ -1,0 +1,46 @@
+/* Styles for the selection popup button, injected into a Shadow DOM.
+   No @tailwind base/components here to avoid leaking resets into host pages. */
+
+.popup-btn {
+  /* Reset any inherited styles */
+  all: unset;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+
+  width: 36px;
+  height: 36px;
+  background-color: #18181b; /* zinc-900 */
+  color: #fafafa;             /* zinc-50 */
+  border-radius: 50%;
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.popup-btn:hover {
+  transform: scale(1.1);
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.45),
+    0 3px 6px rgba(0, 0, 0, 0.25);
+}
+
+.popup-btn:active {
+  transform: scale(0.93);
+}
+
+.popup-btn svg {
+  flex-shrink: 0;
+  pointer-events: none;
+}
