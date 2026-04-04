@@ -31,9 +31,8 @@ export default function App() {
       <div className="w-full bg-zinc-50 rounded-lg border border-zinc-200 p-4 text-sm text-zinc-600 space-y-1">
         <p className="font-medium text-zinc-800">How it works</p>
         <p>
-          Highlight text on any page. A chat icon appears above (or below) the
-          selection. Click it — the selected text is logged to the browser
-          console.
+          Highlight text on any page. A chat icon appears below the selection.
+          Click it - the selected text is logged to the browser console.
         </p>
       </div>
 
