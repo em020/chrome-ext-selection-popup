@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import {read} from "../lib/selection-context.esm";
 
 interface PopupPosition {
   /** Horizontal centre of the button, in CSS fixed-position pixels */
@@ -95,8 +96,9 @@ export default function SelectionPopup() {
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    const selectedText = window.getSelection()?.toString() ?? ''
-    console.log('[Selection Popup] Icon clicked. Selected text:', selectedText)
+    const selection = read()
+    if (!selection) return
+    window.location.href = `eubridge://query?q=${encodeURIComponent(selection.selectionText)}@@@${encodeURIComponent(selection.context)}`
   }, [])
 
   if (!position) return null

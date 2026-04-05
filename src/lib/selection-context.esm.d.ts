@@ -1,0 +1,1 @@
+export function read(): { selectionText: string; context: string } | null;
