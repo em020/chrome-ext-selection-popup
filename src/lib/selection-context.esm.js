@@ -72,9 +72,10 @@ function splitSentencesWithPositions(text) {
 // Tags whose textContent is a reasonable sentence container. We stop
 // walking up at the first match (or at body/html if none matches).
 var BLOCK_TAGS = {
-  P: 1, LI: 1, DIV: 1, SPAN: 1,
+  P: 1, LI: 1, DIV: 1,
   TD: 1, TH: 1, ARTICLE: 1, SECTION: 1,
-  DD: 1, DT: 1
+  DD: 1, DT: 1,
+  H1: 1, H2: 1, H3: 1, H4: 1, H5: 1, H6: 1
 };
 
 // Walk up the DOM from node to find the nearest block-like ancestor that
