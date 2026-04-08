@@ -11,6 +11,14 @@ interface PopupPosition {
 /** Gap between the selection rect edge and the button edge */
 const POPUP_OFFSET = 8
 
+/** Domains where we force the popup above the selection (they have their own downward popups) */
+const ABOVE_DOMAINS = ['google.com', 'learning.oreilly.com']
+
+function shouldShowAbove(): boolean {
+  const host = window.location.hostname
+  return ABOVE_DOMAINS.some(d => host === d || host === 'www.' + d)
+}
+
 function getSelectionRect(): DOMRect | null {
   const selection = window.getSelection()
   if (!selection || selection.isCollapsed || !selection.toString().trim()) {
@@ -29,14 +37,17 @@ function getSelectionRect(): DOMRect | null {
 
 function calculatePosition(rect: DOMRect): PopupPosition {
   const vw = window.innerWidth
+  const above = shouldShowAbove()
 
   // Horizontally centre the button over the selection, clamped to viewport edges
   const halfBtn = POPUP_OFFSET + 14  // half of 36px button + small margin
   const x = Math.max(halfBtn, Math.min(rect.left + rect.width / 2, vw - halfBtn))
 
-  // Always place below the selection so the icon doesn't compete with
-  // the system context menu (which typically appears above on mobile)
-  const y = rect.bottom + POPUP_OFFSET
+  // On certain sites (e.g. Google, O'Reilly) show above the selection to avoid
+  // colliding with their own downward popups; otherwise show below.
+  const y = above
+    ? rect.top - POPUP_OFFSET
+    : rect.bottom + POPUP_OFFSET
 
   return { x, y }
 }
@@ -80,15 +91,20 @@ export default function SelectionPopup() {
       }
     }
 
+    // Reposition on scroll so the popup follows the anchor text
+    const onScroll = () => scheduleUpdate()
+
     document.addEventListener('mouseup', onMouseUp)
     document.addEventListener('touchend', onTouchEnd)
     document.addEventListener('selectionchange', onSelectionChange)
+    window.addEventListener('scroll', onScroll, true)
 
     return () => {
       cancelAnimationFrame(rafId)
       document.removeEventListener('mouseup', onMouseUp)
       document.removeEventListener('touchend', onTouchEnd)
       document.removeEventListener('selectionchange', onSelectionChange)
+      window.removeEventListener('scroll', onScroll, true)
     }
   }, [updatePopup, hidePopup])
 
@@ -103,18 +119,26 @@ export default function SelectionPopup() {
 
   if (!position) return null
 
+  const above = shouldShowAbove()
+
   const style: React.CSSProperties = {
     position: 'fixed',
     left: `${position.x}px`,
     top: `${position.y}px`,
-    // Centre horizontally; top edge of button aligns with y (rect.bottom + offset)
-    transform: 'translate(-50%, 0%)',
+    // Centre horizontally; shift upward when above so the button's bottom edge meets the selection
+    transform: above ? 'translate(-50%, -100%)' : 'translate(-50%, 0%)',
     zIndex: 2147483647,
     pointerEvents: 'all',
+    opacity: 0.45,
+    transition: 'opacity 0.15s ease-in-out',
   }
 
   return (
-    <div style={style}>
+    <div
+      style={style}
+      onMouseEnter={(e) => { e.currentTarget.style.opacity = '1' }}
+      onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.45' }}
+    >
       <button
         className="popup-btn"
         onClick={handleClick}
@@ -127,7 +151,7 @@ export default function SelectionPopup() {
         title="Click to process selection"
         aria-label="Process selected text"
       >
-        {/* MessageSquare icon (inline SVG — no external dep needed in shadow DOM) */}
+        {/* Search (magnifying glass) icon */}
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="16"
@@ -135,12 +159,13 @@ export default function SelectionPopup() {
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden="true"
         >
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
       </button>
     </div>
