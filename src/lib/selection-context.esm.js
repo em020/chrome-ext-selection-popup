@@ -47,21 +47,72 @@ var ABBREV_DOT = '\x00';
 function splitSentencesWithPositions(text) {
   // Hide abbreviation dots before splitting, restore them in the output.
   var processed = text
+    // Ignore formatting newlines inside prose; keep offsets aligned by replacing
+    // each newline with a single space rather than removing characters.
+    .replace(/\n/g, ' ')
     .replace(/\be\.g\./g, 'e' + ABBREV_DOT + 'g' + ABBREV_DOT)
     .replace(/\bi\.e\./g, 'i' + ABBREV_DOT + 'e' + ABBREV_DOT)
     .replace(ABBREV_RE, '$1' + ABBREV_DOT);
 
-  var regex = /(?:\d+(?:\.\d+)+|[A-Z]\.|[^.!?。！？\n])+[.!?。！？\n]*/g;
   var results = [];
+  var regex = /[.!?。！？]/g;
+  var sentenceStart = 0;
   var match;
-  while ((match = regex.exec(processed)) !== null) {
+
+  function pushSentence(endIndex) {
+    if (endIndex <= sentenceStart) {
+      return;
+    }
     results.push({
       // eslint-disable-next-line no-control-regex
-      text: match[0].replace(/\x00/g, '.'),
-      start: match.index,
-      end: match.index + match[0].length
+      text: processed.slice(sentenceStart, endIndex).replace(/\x00/g, '.'),
+      start: sentenceStart,
+      end: endIndex
     });
+    sentenceStart = endIndex;
   }
+
+  function isSentenceBoundary(index, char) {
+    if (char === '.' && /\S/.test(processed.charAt(index + 1))) {
+      return false;
+    }
+
+    var i = index + 1;
+    while (i < processed.length && /["')\]\}]/.test(processed.charAt(i))) {
+      i += 1;
+    }
+
+    return i >= processed.length || /\s/.test(processed.charAt(i));
+  }
+
+  while ((match = regex.exec(processed)) !== null) {
+    if (!isSentenceBoundary(match.index, match[0])) {
+      continue;
+    }
+
+    var end = match.index + 1;
+    while (end < processed.length && /["')\]\}]/.test(processed.charAt(end))) {
+      end += 1;
+    }
+    while (end < processed.length && /\s/.test(processed.charAt(end))) {
+      end += 1;
+    }
+
+    pushSentence(end);
+  }
+
+  if (sentenceStart < processed.length) {
+    pushSentence(processed.length);
+  }
+
+  for (var i = 0; i < results.length; i++) {
+    var item = results[i];
+    if (!normalizeText(item.text)) {
+      results.splice(i, 1);
+      i -= 1;
+    }
+  }
+
   return results;
 }
 
@@ -231,4 +282,3 @@ export function read() {
     context: getSentenceContext(sel, selectionText)
   };
 }
-
